@@ -26,12 +26,14 @@ start_link({Service, LbName}) ->
 
 init(Service) ->
     Nodes = lists:filter(fun(X) -> case string:str(atom_to_list(X), "b_server") of 1 -> true; 0 -> false end end, nodes()),
+    io:format("Node layout has these Server nodes: ~p~n", [Nodes]),
     Servers = lists:foldl(fun(Node, Acc) ->
             case rpc:call(Node, b_server, check_registered, [Service]) of
                 undefined -> Acc;
                 Pid -> [{Pid, Node, 0}|Acc]
             end
         end, [], Nodes),
+    io:format("These nodes: ~p are running --~p-- service.~n", [Servers, Service]),
     {Mega, Sec, Micro} = now(),
     Timestamp = Mega * 1000000 * 1000000 + Sec * 1000000 + Micro,
     {ok, #state{service=Service, servers=Servers, load=0, milestone=Timestamp}}.
@@ -46,10 +48,10 @@ handle_call(terminate, _From, State) ->
 handle_cast({server_pid, Node, Pid, Load}, S=#state{servers=Servers, load=Overall}) ->
     io:format("Registering started or restarted ServiceServer instance in [Load balancer].~n"),
     case lists:keysearch(Node, 2, Servers) of
-        [{_, Node, OldLoad}] ->
+        {value, {_, Node, OldLoad}} ->
             NewServers = lists:keyreplace(Node, 2, Servers, {Pid, Node, Load}),
             {noreply, S#state{servers=NewServers, load=(Overall+(Load-OldLoad))}};
-        [] ->
+        false ->
             {noreply, S#state{servers=[{Pid, Node, Load}|Servers], load=(Overall+Load)}}
     end;
 
@@ -95,8 +97,7 @@ handle_cast(stop, State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-terminate(Reason, _State) ->
-    io:format("Terminating [Load balancer] because of reason: ~p.~n", [Reason]),
+terminate(_Reason, _State) ->
     ok.
 
 check_milestone(S=#state{milestone=Milestone}) ->
