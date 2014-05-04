@@ -31,11 +31,11 @@ handle_call({index, Ref, Pid}, {Pid, _Ref}, State) ->
             Pid,
             Ref,
             [
-                {header, erlang:now(), make_ref()}%,
-                % {infected, erlang:now(), make_ref()},
-                % {caching, [], make_ref()},
-                % {content, [], make_ref()},
-                % {timeouted, [], make_ref()}
+                {header, erlang:now(), make_ref()},
+                {infected, erlang:now(), make_ref()},
+                {caching, [], make_ref()},
+                {content, [], make_ref()},
+                {timeouted, [], make_ref()}
             ]
         }
     ),

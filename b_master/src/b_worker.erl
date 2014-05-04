@@ -69,7 +69,7 @@ waiting({cache_result, {false, {Service, Ref}}, InsToCache}, S = #state{act={Ser
     io:format("[Worker] received NEGative cache result for: --~p--.~n", [Service]),
     LbName = list_to_atom(atom_to_list(b_lb_) ++ atom_to_list(Service)),
     gen_server:cast({global, LbName}, {get_result, {Ref, Arg, self()}, InsToCache}),
-    gen_server:cast({global, b_cache}, {peek, Act, self()}),
+    gen_server:cast({global, b_cache}, {peek, {Act, self()}}),
     check_timeout({next_state, waiting, S#state{act=Act, pending=Pending, completed=[{pending, Service, Ref, []}|Completed]}});
 
 waiting({cache_result, {Result, {Service, Ref}}}, S = #state{completed=Completed, act={Service, _, Ref}, pending=[Act|Pending]}) ->
