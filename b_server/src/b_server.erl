@@ -22,20 +22,24 @@ add_service_server(manual, Service) ->
     LbName = list_to_atom(atom_to_list(b_lb_) ++ atom_to_list(Service)),
     case global:whereis_name(LbName) of
         undefined ->
-            timer:sleep(net_kernel:get_net_ticktime()),
-            case global:whereis_name(LbName) of
-                undefined ->
-                    [Balancer|_] = lists:filter(fun(X) ->
-                            case string:str(atom_to_list(X), "b_balancer") of
-                                1 -> true;
-                                0 -> false;
-                                _ -> false
-                            end
-                        end, nodes()),
-                    rpc:call(Balancer, b_balancer, add_load_balancer, [Service]),
-                    add_server(Service, ServerName, LbName);
-                _LbPid ->
-                    add_server(Service, ServerName, LbName)
+            second_lb_check(Service, ServerName, LbName);
+        _LbPid ->
+            add_server(Service, ServerName, LbName)
+    end.
+
+second_lb_check(Service, ServerName, LbName) ->
+    timer:sleep(net_kernel:get_net_ticktime()),
+    case global:whereis_name(LbName) of
+        undefined ->
+            case global:whereis_name(b_balancer_sup) of
+                undefined -> nil;
+                Pid ->
+                    case node(Pid) of
+                        nonode@nohost -> nil;
+                        Node ->
+                            rpc:call(Node, b_balancer, add_load_balancer, [Service]),
+                            add_server(Service, ServerName, LbName)
+                    end
             end;
         _LbPid ->
             add_server(Service, ServerName, LbName)

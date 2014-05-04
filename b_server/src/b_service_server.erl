@@ -21,6 +21,7 @@
 
 start_link({Service, LbName, ServerName}) ->
     io:format("Starting [ServiceServer].~n"),
+    process_flag(trap_exit, true),
     gen_server:start_link({local, ServerName}, ?MODULE, {Service, LbName}, []).
 
 init({Service, LbName}) ->

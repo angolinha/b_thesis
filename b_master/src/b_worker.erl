@@ -62,13 +62,23 @@ init({Pid, Ref, [First|Services]}) ->
 waiting({cache_result, {false, {Service, Ref}}, InsToCache}, S = #state{act={Service, Arg, Ref}, pending=[], completed=Completed}) ->
     io:format("[Worker] received NEGative cache result for: --~p--.~n", [Service]),
     LbName = list_to_atom(atom_to_list(b_lb_) ++ atom_to_list(Service)),
-    gen_server:cast({global, LbName}, {get_result, {Ref, Arg, self()}, InsToCache}),
+    case global:whereis_name(LbName) of
+        undefined ->
+            second_lb_check(Service, LbName, {get_result, {Ref, Arg, self()}, InsToCache});
+        LbPid ->
+            gen_server:cast(LbPid, {get_result, {Ref, Arg, self()}, InsToCache})
+    end,
     check_timeout({next_state, waiting, S#state{act=nil, completed=[{pending, Service, Ref, []}|Completed]}});
 
 waiting({cache_result, {false, {Service, Ref}}, InsToCache}, S = #state{act={Service, Arg, Ref}, pending=[Act|Pending], completed=Completed}) ->
     io:format("[Worker] received NEGative cache result for: --~p--.~n", [Service]),
     LbName = list_to_atom(atom_to_list(b_lb_) ++ atom_to_list(Service)),
-    gen_server:cast({global, LbName}, {get_result, {Ref, Arg, self()}, InsToCache}),
+    case global:whereis_name(LbName) of
+        undefined ->
+            second_lb_check(Service, LbName, {get_result, {Ref, Arg, self()}, InsToCache});
+        LbPid ->
+            gen_server:cast(LbPid, {get_result, {Ref, Arg, self()}, InsToCache})
+    end,
     gen_server:cast({global, b_cache}, {peek, {Act, self()}}),
     check_timeout({next_state, waiting, S#state{act=Act, pending=Pending, completed=[{pending, Service, Ref, []}|Completed]}});
 
@@ -160,3 +170,23 @@ terminate(normal, ready, _State) ->
     ok;
 terminate(_Reason, _StateName, _StateData) ->
     ok.
+
+%% Functionality checking existence of load balancer and possibly spawning one
+
+second_lb_check(Service, LbName, Request) ->
+    timer:sleep(net_kernel:get_net_ticktime()),
+    case global:whereis_name(LbName) of
+        undefined ->
+            case global:whereis_name(b_balancer_sup) of
+                undefined -> nil;
+                Pid ->
+                    case node(Pid) of
+                        nonode@nohost -> nil;
+                        Node ->
+                            rpc:call(Node, b_balancer, add_load_balancer, [Service]),
+                            gen_server:cast({global, LbName}, Request)
+                    end
+            end;
+        LbPid ->
+            gen_server:cast(LbPid, Request)
+    end.

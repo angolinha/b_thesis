@@ -5,7 +5,10 @@
 start(normal, _Args) ->
     erlang:set_cookie(xsustekm_b_thesis, node()),
     b_balancer_sup:start_link();
-start(takeover, _OtherNode) ->
+start({takeover, _OtherNode}, []) ->
+    erlang:set_cookie(xsustekm_b_thesis, node()),
+    b_balancer_sup:start_link();
+start({failover, _OtherNode}, []) ->
     erlang:set_cookie(xsustekm_b_thesis, node()),
     b_balancer_sup:start_link().
 
