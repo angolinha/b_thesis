@@ -61,5 +61,6 @@ add_server(Service, ServerName, LbName) ->
     end.
 
 check_registered(Service) ->
+    io:format("Checking if node : ~p is running: ~p service.~n", [node(), Service]),
     ServerName = list_to_atom(atom_to_list(b_service_) ++ atom_to_list(Service)),
     whereis(ServerName).

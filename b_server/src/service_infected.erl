@@ -43,7 +43,7 @@ run({{Ref, Arg, WorkerPid}, true}) ->
 
 get_result(Arg) ->
     random:seed(Arg),
-    Iter = random:uniform(9),
+    Iter = random:uniform(12),
     Part = dump(Iter),
     io:format("~p going down!~n", [Part]),
     "<div id='infected-service-container'"++
@@ -56,36 +56,77 @@ get_result(Arg) ->
         "nacitavanie stranky prebehne bez povsimnutia alebo len potrva dlhsie)</div>"++
     "</div>".
 
-turn_off(Part) ->
-    gen_server:cast({global, Part}, stop).
-
-switch_off(Part) ->
-    supervisor:restart_child({global, b_thesis_sup}, Part).
+pick_service_server(Num, Service, Uppercase) ->
+    Nodes = lists:filter(fun(X) -> case string:str(atom_to_list(X), "b_server") of 1 -> true; 0 -> false end end, nodes()),
+    Servers = lists:foldl(fun(Node, Acc) ->
+            case rpc:call(Node, b_server, check_registered, [Service]) of
+                undefined -> Acc;
+                Pid -> [{Pid, Node}|Acc]
+            end
+        end, [], Nodes),
+    case Servers of
+        [] ->
+            dump(Num);
+        _ ->
+            Index = random:uniform(length(Servers)),
+            {Pid, Node} = lists:nth(Index,Servers),
+            gen_server:cast(Pid, stop),
+            io_lib:format("~p SERVICE SERVER at NODE ~p", [Uppercase, Node])
+    end.
 
 dump(1) ->
-    turn_off(b_adapter),
-    "ADAPTER";
+    gen_server:cast({global, b_service_broker}, stop),
+    "SERVICE BROKER";
 dump(2) ->
-    turn_off(b_cache),
+    gen_server:cast({global, b_cache}, stop),
     "CACHE";
 dump(3) ->
-    turn_off(b_cache_cleaner),
-    "CACHE CLEANER";
+    case global:whereis_name(b_lb_caching) of
+        undefined ->
+            dump(4);
+        Pid ->
+            gen_server:cast(Pid, stop),
+            "CACHING SERVICE LOAD BALANCER"
+    end;
 dump(4) ->
-    switch_off(b_cache_sup),
-    "CACHE SUPERVISOR";
+    case global:whereis_name(b_lb_content) of
+        undefined ->
+            dump(5);
+        Pid ->
+            gen_server:cast(Pid, stop),
+            "CONTENT SERVICE LOAD BALANCER"
+    end;
 dump(5) ->
-    turn_off(b_event_mgr),
-    "EVENT MANAGER";
+    case global:whereis_name(b_lb_header) of
+        undefined ->
+            dump(6);
+        Pid ->
+            gen_server:cast(Pid, stop),
+            "HEADER SERVICE LOAD BALANCER"
+    end;
 dump(6) ->
-    switch_off(b_usr_chain),
-    "USER CHAIN SUPERVISOR";
+    case global:whereis_name(b_lb_infected) of
+        undefined ->
+            dump(7);
+        Pid ->
+            gen_server:cast(Pid, stop),
+            "INFECTED SERVICE LOAD BALANCER"
+    end;
 dump(7) ->
-    switch_off(b_lb_pool),
-    "LOAD BALANCER POOL";
+    case global:whereis_name(b_lb_timeouted) of
+        undefined ->
+            dump(8);
+        Pid ->
+            gen_server:cast(Pid, stop),
+            "TIMEOUTED SERVICE LOAD BALANCER"
+    end;
 dump(8) ->
-    turn_off(b_reg_heir),
-    "LOAD BALANCER REGISTER HEIR";
+    pick_service_server(9, caching, "CACHING");
 dump(9) ->
-    turn_off(b_lb_register),
-    "LOAD BALANCER REGISTER".
+    pick_service_server(10, content, "CONTENT");
+dump(10) ->
+    pick_service_server(11, header, "HEADER");
+dump(11) ->
+    pick_service_server(12, infected, "INFECTED");
+dump(12) ->
+    pick_service_server(1, timeouted, "TIMEOUTED").

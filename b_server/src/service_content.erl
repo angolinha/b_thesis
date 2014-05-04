@@ -46,7 +46,9 @@ get_result(Arg, WorkerPid) ->
     "style='width:40%;height:70%;border-style:solid;position:absolute;"++
     "background-color:#ffffff;right:30%;top:23%;text-align:left;'>"++
     "<div style='margin:10px;font-size:12pt;'>"++
-    "<p>NAZOV</p><p>HODNOTENIE ZISKANE Z UZLA "++io_lib:format("~p", [node()])++"</p><p>POPIS VYPRACOVAL WORKER: "++io_lib:format("~p", [WorkerPid])++"</p>"++
+    "<p>NAZOV</p><p>HODNOTENIE ZISKANE Z UZLA: "++io_lib:format("~p", [node()])++
+    "<br/>VYTVORENE SERVEROM: "++io_lib:format("~p", [self()])++
+    "</p><p>VYSLEDOK ZAPRACOVAL WORKER: "++io_lib:format("~p", [WorkerPid])++"</p>"++
     "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer pretium, libero vitae pharetra luctus, quam sem "++
     "dictum tortor, vel elementum tortor neque quis elit. Nunc at posuere eros, sit amet fringilla lectus. Curabitur "++
     "posuere aliquet lorem, in lobortis erat venenatis sit amet. Etiam iaculis massa non luctus suscipit. Nullam vel "++

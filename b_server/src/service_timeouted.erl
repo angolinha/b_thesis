@@ -42,7 +42,7 @@ run({{Ref, Arg, WorkerPid}, true}) ->
     gen_server:cast({global, b_cache}, {cache_result, {timeouted, Arg, Result}}).
 
 get_result(Arg) ->
-    count_pi(1, (1/math:sqrt(2)), (1/4), 1, 0, 600000),
+    count_pi(1, (1/math:sqrt(2)), (1/4), 1, 0, 300000),
     "<div id='timeouted-service-container'"++
     "style='width:20%;height:70%;border-style:solid;position:absolute;"++
     "background-color:#abc841;right:10%;top:23%;text-align:center;'>"++
