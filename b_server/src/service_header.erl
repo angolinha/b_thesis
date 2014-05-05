@@ -50,7 +50,7 @@ get_result(Arg) ->
 
 advertising(Arg) ->
     random:seed(Arg),
-    Iter = random:uniform(500000),
+    Iter = random:uniform(5000),
     count_pi(1, (1/math:sqrt(2)), (1/4), 1, 0, Iter),
     io_lib:format("-- TUTO STRANKU vam priniesla ~p. desatina PI --", [Iter]).
 

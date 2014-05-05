@@ -42,6 +42,7 @@ run({{Ref, Arg, WorkerPid}, true}) ->
     gen_server:cast({global, b_cache}, {cache_result, {content, Arg, Result}}).
 
 get_result(Arg, WorkerPid) ->
+    count_pi(1, (1/math:sqrt(2)), (1/4), 1, 0, 1000),
     "<div id='content-service-container'"++
     "style='width:40%;height:70%;border-style:solid;position:absolute;"++
     "background-color:#ffffff;right:30%;top:23%;text-align:left;'>"++
@@ -60,3 +61,15 @@ get_result(Arg, WorkerPid) ->
     "metus. Phasellus in auctor massa. Maecenas vehicula bibendum ante id luctus. Maecenas interdum urna sit amet adipiscing "++
     "vulputate. Praesent sagittis, libero vel ullamcorper tempus, turpis neque cursus justo, nec malesuada mauris lacus a felis.</p>"++
     "</div></div>".
+
+count_pi(A, B, T, P, Count, Stop) ->
+    case (Count+1 > Stop) of
+        true ->
+            nil;
+        false ->
+            An = round((A+B)/2),
+            Bn = round(math:sqrt(A*B)),
+            Tn = round( T - (P* ( An*An-Bn*Bn )) ),
+            Pn = round(2*P),
+            count_pi(An, Bn, Tn, Pn, (Count+1), Stop)
+    end.

@@ -43,7 +43,7 @@ handle_cast({peek, {{Service, Arg, Ref}, Pid}}, State) ->
             ets:update_element(cache, Key, {#item.occur, (Occur+1)}),
             gen_fsm:send_event(Pid, { cache_result, { Value, {Service, Ref} } });
         [] ->
-            io:format("Result NOT in cache~n"),
+            % io:format("Result NOT in cache~n"),
             check_pending({{Service, Ref}, Key, Pid})
     end,
     {noreply, State};
@@ -82,15 +82,15 @@ terminate(_Reason, _State) ->
 check_pending({{Service, Ref}, Key, Pid}) ->
     case ets:lookup(pending, Key) of
         [#item{key=Key, occur=Occur, transit=true}] ->
-            io:format("Item in pending CACHING~n"),
+            % io:format("Item in pending CACHING~n"),
             ets:update_element(pending, Key, {#item.occur,(Occur+1)}),
             gen_fsm:send_event(Pid, { cache_result, { false, {Service, Ref} }, true });
         [#item{key=Key, occur=Occur, transit=false}] ->
-            io:format("Item in pending WITHOUT TRANSIT flag~n"),
+            % io:format("Item in pending WITHOUT TRANSIT flag~n"),
             ets:update_element(pending, Key, {#item.occur,(Occur+1)}),
             gen_fsm:send_event(Pid, { cache_result, { false, {Service, Ref} }, false });
         [] ->
-            io:format("Item NOT IN pending. Adding~n"),
+            % io:format("Item NOT IN pending. Adding~n"),
             ets:insert(pending, #item{key=Key, value=nil, occur=1, transit=false}),
             gen_fsm:send_event(Pid, { cache_result, { false, {Service, Ref} }, false })
     end.

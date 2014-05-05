@@ -28,7 +28,7 @@ run({{Ref, Arg, WorkerPid}, false}) ->
     );
 
 run({{Ref, Arg, WorkerPid}, true}) ->
-    io:format("This result should be inserted to cache!~n"),
+    % io:format("This result should be inserted to cache!~n"),
     Result = get_result(Arg),
     gen_fsm:send_event(
         WorkerPid,
@@ -43,6 +43,7 @@ run({{Ref, Arg, WorkerPid}, true}) ->
     gen_server:cast({global, b_cache}, {cache_result, {caching, Arg, Result}}).
 
 get_result(Arg) ->
+    count_pi(1, (1/math:sqrt(2)), (1/4), 1, 0, 1000),
     {{Year,Month,Day},{Hour,Min,Sec}} = erlang:localtime(),
     "<div id='caching-service-container'"++
     "style='width:20%;height:70%;border-style:solid;position:absolute;"++
@@ -52,3 +53,15 @@ get_result(Arg) ->
     "<p>Dnes je: "++io_lib:format("~p.~p.~p",[Day, Month, Year])++"<br/>"++io_lib:format("~p:~p:~p",[Hour, Min, Sec])++"</p>"++
     "<p>AK SA TATO HODNOTA NEMENI, PREBEHLO KESOVANIE.</p></div>"++
     "</div>".
+
+count_pi(A, B, T, P, Count, Stop) ->
+    case (Count+1 > Stop) of
+        true ->
+            nil;
+        false ->
+            An = round((A+B)/2),
+            Bn = round(math:sqrt(A*B)),
+            Tn = round( T - (P* ( An*An-Bn*Bn )) ),
+            Pn = round(2*P),
+            count_pi(An, Bn, Tn, Pn, (Count+1), Stop)
+    end.

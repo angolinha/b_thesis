@@ -3,11 +3,11 @@
 -behaviour(supervisor).
 
 start_link() ->
-    io:format("Starting [CacheSup].~n"),
+    % io:format("Starting [CacheSup].~n"),
     supervisor:start_link({local, b_cache_sup}, ?MODULE, []).
 
 init([]) ->
-    io:format("Requesting Cache start in [CacheSup].~n"),
+    % io:format("Requesting Cache start in [CacheSup].~n"),
     {
         ok,
         {

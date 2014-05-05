@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 start_link() ->
-    io:format("Starting [MasterSupervisor]~n"),
+    % io:format("Starting [MasterSupervisor]~n"),
     supervisor:start_link({local, b_master_sup}, ?MODULE, []).
 
 init([]) ->

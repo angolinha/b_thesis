@@ -19,7 +19,7 @@ out(A) ->
     Self = self(),
     spawn(fun() ->
         Ref = make_ref(),
-        io:format("Sending request with arg: --~p-- to ServiceBroker in [Proxy]~n", [list_to_atom(A#arg.appmoddata)]),
+        % io:format("Sending request with arg: --~p-- to ServiceBroker in [Proxy]~n", [list_to_atom(A#arg.appmoddata)]),
         {ok, Pid} = gen_server:call({global, b_service_broker}, {list_to_atom(A#arg.appmoddata), Ref, self()}),
         b_proxy:try_receive(Self, Pid, Ref)
     end),

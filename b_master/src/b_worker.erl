@@ -27,7 +27,7 @@
 %% API to start worker and begin collecting services results
 
 start_link({Pid, Ref, Services}) ->
-    io:format("Starting [Worker].~n"),
+    % io:format("Starting [Worker].~n"),
     gen_fsm:start_link(?MODULE, {Pid, Ref, Services}, []).
 
 %% Gen_fsm functions
@@ -60,7 +60,7 @@ init({Pid, Ref, [First|Services]}) ->
 
 %% Waiting for partial result
 waiting({cache_result, {false, {Service, Ref}}, InsToCache}, S = #state{act={Service, Arg, Ref}, pending=[], completed=Completed}) ->
-    io:format("[Worker] received NEGative cache result for: --~p--.~n", [Service]),
+    % io:format("[Worker] received NEGative cache result for: --~p--.~n", [Service]),
     LbName = list_to_atom(atom_to_list(b_lb_) ++ atom_to_list(Service)),
     case global:whereis_name(LbName) of
         undefined ->
@@ -71,7 +71,7 @@ waiting({cache_result, {false, {Service, Ref}}, InsToCache}, S = #state{act={Ser
     check_timeout({next_state, waiting, S#state{act=nil, completed=[{pending, Service, Ref, []}|Completed]}});
 
 waiting({cache_result, {false, {Service, Ref}}, InsToCache}, S = #state{act={Service, Arg, Ref}, pending=[Act|Pending], completed=Completed}) ->
-    io:format("[Worker] received NEGative cache result for: --~p--.~n", [Service]),
+    % io:format("[Worker] received NEGative cache result for: --~p--.~n", [Service]),
     LbName = list_to_atom(atom_to_list(b_lb_) ++ atom_to_list(Service)),
     case global:whereis_name(LbName) of
         undefined ->
@@ -83,15 +83,15 @@ waiting({cache_result, {false, {Service, Ref}}, InsToCache}, S = #state{act={Ser
     check_timeout({next_state, waiting, S#state{act=Act, pending=Pending, completed=[{pending, Service, Ref, []}|Completed]}});
 
 waiting({cache_result, {Result, {Service, Ref}}}, S = #state{completed=Completed, act={Service, _, Ref}, pending=[Act|Pending]}) ->
-    io:format("[Worker] received POSitive cache result for: --~p--.~n", [Service]),
+    % io:format("[Worker] received POSitive cache result for: --~p--.~n", [Service]),
     test(S#state{act=Act, pending=Pending, completed=[{done, Service, Ref, Result}|Completed]}, waiting, true);
 
 waiting({cache_result, {Result, {Service, Ref}}}, S = #state{completed=Completed, act={Service, _, Ref}, pending=[]}) ->
-    io:format("[Worker] received POSitive cache result for last request for: --~p--.~n", [Service]),
+    % io:format("[Worker] received POSitive cache result for last request for: --~p--.~n", [Service]),
     test(S#state{act=nil, completed=[{done, Service, Ref, Result}|Completed]}, waiting, true);
 
 waiting({server_result, {Result, {Service, Ref}}}, S = #state{completed=Completed}) ->
-    io:format("[Worker] received asynchronous Server result for: --~p--.~n", [Service]),
+    % io:format("[Worker] received asynchronous Server result for: --~p--.~n", [Service]),
     case lists:keysearch(Ref, 3, Completed) of
         {value, {pending, Service, Ref, []}} ->
             NewCompleted = lists:keyreplace(Ref, 3, Completed, {done, Service, Ref, Result}),
@@ -111,7 +111,7 @@ testService({done, _, _, _}) ->
     true.
 
 test(S = #state{pending=[], act=nil, completed=Completed}, NextState, _) ->
-    io:format("[Worker] got partial result and is Testing if it's last.~n"),
+    % io:format("[Worker] got partial result and is Testing if it's last.~n"),
     case lists:all(fun testService/1, Completed) of
         true ->
             finished(S);
@@ -119,18 +119,18 @@ test(S = #state{pending=[], act=nil, completed=Completed}, NextState, _) ->
             check_timeout({next_state, NextState, S})
     end;
 test(S = #state{pending=[], act=Act}, NextState, true) ->
-    io:format("[Worker] Tested partial result that wasn't last.~n"),
+    % io:format("[Worker] Tested partial result that wasn't last.~n"),
     gen_server:cast({global, b_cache}, {peek, {Act, self()}}),
     check_timeout({next_state, NextState, S});
 test(S, NextState, false) ->
-    io:format("[Worker] Tested partial result that wasn't last.~n"),
+    % io:format("[Worker] Tested partial result that wasn't last.~n"),
     check_timeout({next_state, NextState, S});
 test(S = #state{act=Act}, NextState, true) ->
-    io:format("[Worker] Tested partial result that wasn't last.~n"),
+    % io:format("[Worker] Tested partial result that wasn't last.~n"),
     gen_server:cast({global, b_cache}, {peek, {Act, self()}}),
     check_timeout({next_state, NextState, S});
 test(S, NextState, false) ->
-    io:format("[Worker] Tested partial result that wasn't last.~n"),
+    % io:format("[Worker] Tested partial result that wasn't last.~n"),
     check_timeout({next_state, NextState, S}).
 
 check_timeout({next_state, NextState, S = #state{timestamp=Timestamp}}) ->
@@ -138,7 +138,7 @@ check_timeout({next_state, NextState, S = #state{timestamp=Timestamp}}) ->
     Current = Mega * 1000000 * 1000000 + Sec * 1000000 + Micro,
     case ( abs(Current-Timestamp) > application:get_env(b_master, worker_timeout, nil) ) of
         true ->
-            io:format("[Worker] reached timeout and is sending incomplete result to requester.~n"),
+            % io:format("[Worker] reached timeout and is sending incomplete result to requester.~n"),
             timeouted(S);
         false ->
             {next_state, NextState, S}
@@ -146,13 +146,13 @@ check_timeout({next_state, NextState, S = #state{timestamp=Timestamp}}) ->
 
 %% Got all partial results, so it's possible to combine them and send them to requester
 finished(S = #state{pid=Pid, ref = Ref, completed=Completed}) ->
-    io:format("[Worker] combining partial results into Final one.~n"),
+    % io:format("[Worker] combining partial results into Final one.~n"),
     Result = lists:foldr(fun({done, _, _, X}, Acc) -> Acc++X end, "", Completed),
     Pid ! { Ref, "<html><head></head><body bgcolor='#e8e8e8'>"++Result },
     {stop, normal, S}.
 
 timeouted(S = #state{pid=Pid, ref=Ref, completed=Completed, pending=Pending, act=Act}) ->
-    io:format("[Worker] combining INCOMPLETE partial results into Final one.~n"),
+    % io:format("[Worker] combining INCOMPLETE partial results into Final one.~n"),
     Comp = lists:foldr(fun(X, Acc) -> case X of {done, _, _, Val} -> Acc++Val; {pending, Service, _, _} -> Acc++"<div id='"++Service++"-service-container'></div>" end end, "", Completed),
     Pend = lists:foldl(fun({Service, _, _}, Acc) -> Acc++"<div id='"++Service++"-service-container'></div>" end, "", Pending),
     case Act of

@@ -20,11 +20,11 @@
 %%% Gen server functions
 
 start_link({Service, LbName, ServerName}) ->
-    io:format("Starting [ServiceServer].~n"),
-    process_flag(trap_exit, true),
+    % io:format("Starting [ServiceServer].~n"),
     gen_server:start_link({local, ServerName}, ?MODULE, {Service, LbName}, []).
 
 init({Service, LbName}) ->
+    process_flag(trap_exit, true),
     gen_server:cast({global, LbName}, {server_pid, node(), self(), 0}),
     {ok, #state{service=Service, lbName=LbName, active=0}}.
 
@@ -35,13 +35,13 @@ handle_cast(stop, State) ->
     {stop, normal, State};
 
 handle_cast({serve, Arg, InsToCache}, S=#state{service=Service, active=Active}) ->
-    io:format("Handling request in [ServiceServer] and spawning specific service instance.~n"),
+    % io:format("Handling --~p-- request in [ServiceServer].~n", [Service]),
     Module = list_to_atom(atom_to_list(service_) ++ atom_to_list(Service)),
     spawn_link(Module, run, [{Arg, InsToCache}]),
     {noreply, S#state{active=(Active+1)}}.
 
 handle_info({'EXIT', _, _}, S=#state{lbName=LbName, active=Active}) ->
-    io:format("One of [ServiceServer]'s workers finished task.~n"),
+    % io:format("One of [ServiceServer]'s workers finished task.~n"),
     gen_server:cast({global, LbName}, {service_instance_finished, self()}),
     {noreply, S#state{active=(Active-1)}};
 
@@ -53,6 +53,6 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 terminate(_Reason, _State) ->
-    io:format("[ServiceServer] instance killed in process of downgrade sleeping, so it's workers can finish.~n"),
+    % io:format("[ServiceServer] instance killed in process of downgrade sleeping, so it's workers can finish.~n"),
     timer:sleep(1000),
     ok.

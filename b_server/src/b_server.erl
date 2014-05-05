@@ -1,6 +1,6 @@
 -module(b_server).
 -behaviour(application).
--export([stop/1, start/2, add_service_server/1, add_service_server/2, check_registered/1]).
+-export([stop/1, start/2, add_service_server/1, add_service_server/2, check_registered/1, remove_service_server/1]).
 
 start(normal, _Args) ->
     erlang:set_cookie(xsustekm_b_thesis, node()),
@@ -26,6 +26,9 @@ add_service_server(manual, Service) ->
         _LbPid ->
             add_server(Service, ServerName, LbName)
     end.
+
+remove_service_server(Pid) ->
+    supervisor:terminate_child(b_server_sup, Pid).
 
 second_lb_check(Service, ServerName, LbName) ->
     timer:sleep(net_kernel:get_net_ticktime()),
@@ -65,6 +68,6 @@ add_server(Service, ServerName, LbName) ->
     end.
 
 check_registered(Service) ->
-    io:format("Checking if node : ~p is running: ~p service.~n", [node(), Service]),
+    % io:format("Checking if node : ~p is running: ~p service.~n", [node(), Service]),
     ServerName = list_to_atom(atom_to_list(b_service_) ++ atom_to_list(Service)),
     whereis(ServerName).

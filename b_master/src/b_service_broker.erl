@@ -18,21 +18,21 @@
 %%% Gen server functions
 
 start_link() ->
-    io:format("Starting [ServiceBroker]~n"),
+    % io:format("Starting [ServiceBroker]~n"),
     gen_server:start_link({global, b_service_broker}, ?MODULE, [], []).
 
 init([]) ->
     {ok, []}.
 
 handle_call({index, Ref, Pid}, {Pid, _Ref}, State) ->
-    io:format("Handling --index-- event in [ServiceBroker]~n"),
+    % io:format("Handling --index-- event in [ServiceBroker]~n"),
     WorkerPid = b_worker:start_link(
         {
             Pid,
             Ref,
             [
                 {header, erlang:now(), make_ref()},
-                {infected, erlang:now(), make_ref()},
+                % {infected, erlang:now(), make_ref()},
                 {caching, [], make_ref()},
                 {content, [], make_ref()},
                 {timeouted, [], make_ref()}
