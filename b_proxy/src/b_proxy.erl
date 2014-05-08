@@ -26,11 +26,12 @@ out(A) ->
     {streamcontent, "text/html", ""}.
 
 try_receive(Pid, Worker, Ref) ->
+    {ok, RequestTimeout} = application:get_env(b_proxy, request_timeout),
     receive
         {Ref, Data} ->
             yaws_final(Pid, Data++"</body></html>")
     after
-        application:get_env(b_proxy, request_timeout, nil) ->
+        RequestTimeout ->
             gen_fsm:send_all_state_event(Worker, stop),
             yaws_final(Pid, "<html><head></head><body>Request timed out!</body></html>")
     end.

@@ -49,6 +49,7 @@ second_lb_check(Service, ServerName, LbName) ->
     end.
 
 add_server(Service, ServerName, LbName) ->
+    {ok, Shutdown} = application:get_env(b_server, sup_shutdown),
     case whereis(ServerName) of
         undefined ->
             {ok, Pid} = supervisor:start_child(
@@ -57,7 +58,7 @@ add_server(Service, ServerName, LbName) ->
                                 ServerName,
                                 {b_service_server, start_link, [{Service, LbName, ServerName}]},
                                 permanent,
-                                application:get_env(b_server, sup_shutdown, nil),
+                                Shutdown,
                                 worker,
                                 [b_service_server]
                             }

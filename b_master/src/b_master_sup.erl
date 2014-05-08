@@ -7,16 +7,19 @@ start_link() ->
     supervisor:start_link({local, b_master_sup}, ?MODULE, []).
 
 init([]) ->
+    {ok, MaxRestart} = application:get_env(b_master, sup_maxrestart),
+    {ok, MaxTime} = application:get_env(b_master, sup_maxtime),
+    {ok, Shutdown} = application:get_env(b_master, sup_shutdown),
     {
         ok,
         {
-            {one_for_one, application:get_env(b_master, sup_maxrestart, nil), application:get_env(b_master, sup_maxtime, nil)},
+            {one_for_one, MaxRestart, MaxTime},
             [
                 {
                     b_cache_sup,
                     {b_cache_sup, start_link, []},
                     permanent,
-                    application:get_env(b_master, sup_shutdown, nil),
+                    Shutdown,
                     supervisor,
                     [b_cache_sup]
                 },
@@ -24,7 +27,7 @@ init([]) ->
                     b_service_broker,
                     {b_service_broker, start_link, []},
                     permanent,
-                    application:get_env(b_master, sup_shutdown, nil),
+                    Shutdown,
                     worker,
                     [b_service_broker]
                 }

@@ -4,7 +4,7 @@
     {modules, [b_proxy]},
     {registered, [b_proxy]},
     {env, [
-        {yapp_appmods,[{"b_thesis",b_proxy}]},
+        {yapp_appmods,[{"b_proxy",b_proxy}]},
         {request_timeout, 4500}
     ]},
     {applications, [kernel, stdlib]}

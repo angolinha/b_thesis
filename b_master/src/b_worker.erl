@@ -136,7 +136,8 @@ test(S, NextState, false) ->
 check_timeout({next_state, NextState, S = #state{timestamp=Timestamp}}) ->
     {Mega, Sec, Micro} = now(),
     Current = Mega * 1000000 * 1000000 + Sec * 1000000 + Micro,
-    case ( abs(Current-Timestamp) > application:get_env(b_master, worker_timeout, nil) ) of
+    {ok, WorkerTimeout} = application:get_env(b_master, worker_timeout),
+    case ( abs(Current-Timestamp) > WorkerTimeout ) of
         true ->
             % io:format("[Worker] reached timeout and is sending incomplete result to requester.~n"),
             timeouted(S);

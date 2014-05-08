@@ -17,6 +17,7 @@ stop(_State) ->
 
 add_load_balancer(Service) ->
     LbName = list_to_atom(atom_to_list(b_lb_) ++ atom_to_list(Service)),
+    {ok, Shutdown} = application:get_env(b_balancer, sup_shutdown),
     case global:whereis_name(LbName) of
         undefined ->
             {ok, _Pid} = supervisor:start_child(
@@ -25,7 +26,7 @@ add_load_balancer(Service) ->
                                 LbName,
                                 {b_load_balancer, start_link, [{Service, LbName}]},
                                 permanent,
-                                application:get_env(b_balancer, sup_shutdown, nil),
+                                Shutdown,
                                 worker,
                                 [b_load_balancer]
                             }

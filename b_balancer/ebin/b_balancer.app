@@ -11,8 +11,7 @@
         {basic_server_capacity, 1000},
         {srv_requests_per_interval, 2},
         {replication_interval, 500},
-        {replication_top, 0.9},
-        {replication_bottom, 0.5}
+        {replication_top, 0.9}
     ]},
     {applications, [kernel, stdlib]}
 ]}.

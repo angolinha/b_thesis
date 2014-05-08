@@ -38,7 +38,8 @@ handle_cast(stop, State) ->
     {stop, normal, State}.
 
 handle_info(enter_main_loop, State) ->
-    timer:sleep(application:get_env(b_master, cache_clean_timeout, nil)),
+    {ok, CacheCleanTimeout} = application:get_env(b_master, cache_clean_timeout),
+    timer:sleep(CacheCleanTimeout),
     perform_cleanup(State, 0),
     {noreply, State};
 
@@ -53,7 +54,8 @@ terminate(_Reason, _State) ->
     ok.
 
 perform_cleanup({Cache, Pending}, Looped) ->
-    case (Looped < application:get_env(b_master, cache_size, nil)) of
+    {ok, CacheSize} = application:get_env(b_master, cache_size),
+    case (Looped < CacheSize) of
         true ->
             MinCache = ets:foldl(
                 fun(I=#item{transit=Transit, occur=Occur}, Acc=#item{occur=AccOccur}) ->

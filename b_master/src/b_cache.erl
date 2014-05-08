@@ -49,21 +49,34 @@ handle_cast({peek, {{Service, Arg, Ref}, Pid}}, State) ->
     {noreply, State};
 
 handle_cast({cache_result, {Service, Arg, Result}}, CacheSize) ->
-    case (CacheSize == application:get_env(b_master, basic_server_capacity, nil)) of
+    {ok, BasicCacheSize} = application:get_env(b_master, cache_size),
+    case (CacheSize == BasicCacheSize) of
         true ->
             Key = erlang:phash2({Service, Arg}),
-            [I=#item{key=Key}] = ets:lookup(pending, Key),
-            {[#item{key=OldKey}], _} = ets:select(cache, ets:fun2ms(fun(N=#item{transit=T}) when T == true -> N end), 1),
-            ets:delete(cache, OldKey),
-            ets:insert(cache, I#item{value=Result, transit=false}),
-            ets:delete(pending, Key),
-            {noreply, CacheSize};
+            case ets:lookup(pending, Key) of
+                [I=#item{key=Key}] ->
+                    case ets:select(cache, ets:fun2ms(fun(N=#item{transit=T}) when T == true -> N end), 1) of
+                        {[#item{key=OldKey}], _} ->
+                            ets:delete(cache, OldKey),
+                            ets:insert(cache, I#item{value=Result, transit=false}),
+                            ets:delete(pending, Key),
+                            {noreply, CacheSize};
+                        '$end_of_table' ->
+                            {noreply, CacheSize}
+                    end;
+                [] ->
+                    {noreply, CacheSize}
+            end;
         false ->
             Key = erlang:phash2({Service, Arg}),
-            [I=#item{key=Key}] = ets:lookup(pending, Key),
-            ets:insert(cache, I#item{value=Result, transit=false}),
-            ets:delete(pending, Key),
-            {noreply, (CacheSize+1)}
+            case ets:lookup(pending, Key) of
+                [I=#item{key=Key}] ->
+                    ets:insert(cache, I#item{value=Result, transit=false}),
+                    ets:delete(pending, Key),
+                    {noreply, (CacheSize+1)};
+                [] ->
+                    {noreply, (CacheSize)}
+            end
     end;
 
 handle_cast(stop, State) ->

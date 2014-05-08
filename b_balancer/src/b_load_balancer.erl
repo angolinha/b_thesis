@@ -104,7 +104,8 @@ check_milestone(S=#state{milestone=Milestone}) ->
     % io:format("[Load balancer] reached interval for replication check.~n"),
     {Mega, Sec, Micro} = now(),
     Timestamp = Mega * 1000000 * 1000000 + Sec * 1000000 + Micro,
-    case ( (Timestamp - Milestone) > application:get_env(b_balancer, replication_interval, nil) ) of
+    {ok, ReplicationInterval} = application:get_env(b_balancer, replication_interval),
+    case ( (Timestamp - Milestone) > ReplicationInterval ) of
         true ->
             check_load(S#state{milestone=Timestamp});
         false ->
@@ -113,8 +114,10 @@ check_milestone(S=#state{milestone=Milestone}) ->
 
 check_load(S=#state{service=Service, load=Load, servers=Servers}) ->
     io:format("[Load balancer] checking whether to add replica or send terminate Msg to one of active servers.~n"),
-    ReplicationTreshold = ((Load/length(Servers))/application:get_env(b_balancer, srv_requests_per_interval, nil)),
-    case ( ReplicationTreshold > application:get_env(b_balancer, replication_top, nil) ) of
+    {ok, RequestsPerInterval} = application:get_env(b_balancer, srv_requests_per_interval),
+    ReplicationTreshold = ((Load/length(Servers))/RequestsPerInterval),
+    {ok, ReplicationTop} = application:get_env(b_balancer, replication_top),
+    case ( ReplicationTreshold > ReplicationTop ) of
         true ->
             Nodes = lists:filter(fun(X) ->
                 case lists:keysearch(X, 2, Servers) of
@@ -134,22 +137,6 @@ check_load(S=#state{service=Service, load=Load, servers=Servers}) ->
                     Pid = rpc:call(Node, b_server, add_service_server, [Service]),
                     S#state{servers=[{Pid, Node, 0}|Servers]}
             end;
-        false ->
-            check_downgrade(S, ReplicationTreshold)
-    end.
-
-check_downgrade(S=#state{servers=[]}, _ReplicationTreshold) ->
-    S;
-
-check_downgrade(S=#state{servers=[_]}, _ReplicationTreshold) ->
-    S;
-
-check_downgrade(S=#state{service=Service, servers=[{Pid, Node, Load}|Servers], load=Overall}, ReplicationTreshold) ->
-    case ( ReplicationTreshold < application:get_env(b_balancer, replication_bottom, nil) ) of
-        true ->
-            io:format("[Load balancer] REMOVING REPLICA of service --~p-- from node --~p--~n", [Service, Node]),
-            rpc:call(Node, b_server, remove_service_server, [Pid]),
-            S#state{servers=Servers, load=(Overall-Load)};
         false ->
             S
     end.

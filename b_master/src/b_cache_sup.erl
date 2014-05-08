@@ -7,17 +7,19 @@ start_link() ->
     supervisor:start_link({local, b_cache_sup}, ?MODULE, []).
 
 init([]) ->
-    % io:format("Requesting Cache start in [CacheSup].~n"),
+    {ok, MaxRestart} = application:get_env(b_master, sup_maxrestart),
+    {ok, MaxTime} = application:get_env(b_master, sup_maxtime),
+    {ok, Shutdown} = application:get_env(b_master, subsup_shutdown),
     {
         ok,
         {
-            {one_for_all, application:get_env(b_master, sup_maxrestart, nil), application:get_env(b_master, sup_maxtime, nil)},
+            {one_for_all, MaxRestart, MaxTime},
             [
                 {
                     b_cache,
                     {b_cache, start_link, []},
                     permanent,
-                    application:get_env(b_master, subsup_shutdown, nil),
+                    Shutdown,
                     worker,
                     [b_cache]
                 },
@@ -25,7 +27,7 @@ init([]) ->
                     b_cache_cleaner,
                     {b_cache_cleaner, start_link, []},
                     permanent,
-                    application:get_env(b_master, subsup_shutdown, nil),
+                    Shutdown,
                     worker,
                     [b_cache_cleaner]
                 }
