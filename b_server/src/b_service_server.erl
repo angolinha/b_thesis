@@ -35,7 +35,7 @@ handle_cast(stop, State) ->
     {stop, normal, State};
 
 handle_cast({serve, Arg, InsToCache}, S=#state{service=Service, active=Active}) ->
-    % io:format("Handling --~p-- request in [ServiceServer].~n", [Service]),
+    io:format("Handling --~p-- request in [ServiceServer].~n", [Service]),
     Module = list_to_atom(atom_to_list(service_) ++ atom_to_list(Service)),
     spawn_link(Module, run, [{Arg, InsToCache}]),
     {noreply, S#state{active=(Active+1)}}.

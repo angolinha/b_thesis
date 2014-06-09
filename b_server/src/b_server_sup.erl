@@ -6,8 +6,8 @@ start_link() ->
     supervisor:start_link({local, b_server_sup}, ?MODULE, []).
 
 init([]) ->
-    {ok, MaxRestart} = application:get_env(b_master, sup_maxrestart),
-    {ok, MaxTime} = application:get_env(b_master, sup_maxtime),
+    {ok, MaxRestart} = application:get_env(b_server, sup_maxrestart),
+    {ok, MaxTime} = application:get_env(b_server, sup_maxtime),
     {
         ok,
         {
